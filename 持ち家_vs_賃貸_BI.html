@@ -1,0 +1,2010 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>持ち家 vs 賃貸 BI</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f2;
+      --surface: #ffffff;
+      --surface-2: #eef2ee;
+      --ink: #1b2428;
+      --muted: #697579;
+      --line: #d7ded8;
+      --teal: #167c80;
+      --teal-2: #dceeed;
+      --blue: #2f65b0;
+      --amber: #b66c14;
+      --red: #bd3d3d;
+      --green: #23764a;
+      --shadow: 0 12px 30px rgba(27, 36, 40, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+      line-height: 1.5;
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 20px 18px;
+      background: #182326;
+      color: #f8fbf8;
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+      overflow-y: auto;
+    }
+
+    .brand {
+      display: grid;
+      gap: 4px;
+      margin-bottom: 22px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.15;
+      font-weight: 750;
+    }
+
+    .brand p {
+      margin: 0;
+      color: #b7c3c5;
+      font-size: 13px;
+    }
+
+    .tabs {
+      display: grid;
+      gap: 6px;
+      margin: 18px 0 24px;
+    }
+
+    .tab-button {
+      width: 100%;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #dce7e8;
+      text-align: left;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .tab-button:hover,
+    .tab-button.active {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+    }
+
+    .tab-button .mark {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #6f7f82;
+      flex: 0 0 auto;
+    }
+
+    .tab-button.active .mark {
+      background: #79d5cf;
+    }
+
+    .side-metric {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .side-metric span {
+      color: #b7c3c5;
+      font-size: 12px;
+    }
+
+    .side-metric strong {
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    .content {
+      padding: 22px;
+      min-width: 0;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .topbar h2 {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.2;
+    }
+
+    .topbar p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      max-width: 760px;
+    }
+
+    .status-pill {
+      flex: 0 0 auto;
+      min-width: 170px;
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      text-align: right;
+    }
+
+    .status-pill span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .status-pill strong {
+      display: block;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .grid.kpis {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .grid.two {
+      grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+      align-items: start;
+    }
+
+    .grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .panel,
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel {
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .panel-header h3 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.25;
+    }
+
+    .panel-header p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .kpi {
+      padding: 14px;
+      min-height: 116px;
+      display: grid;
+      align-content: space-between;
+      gap: 10px;
+    }
+
+    .kpi .label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .kpi .value {
+      display: block;
+      font-size: clamp(20px, 2.3vw, 30px);
+      font-weight: 760;
+      line-height: 1.05;
+      overflow-wrap: anywhere;
+    }
+
+    .kpi .sub {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .kpi.good {
+      border-color: rgba(35, 118, 74, 0.35);
+      background: #f4fbf6;
+    }
+
+    .kpi.bad {
+      border-color: rgba(189, 61, 61, 0.35);
+      background: #fff7f6;
+    }
+
+    .chart-wrap {
+      min-height: 360px;
+      background: linear-gradient(180deg, #ffffff 0%, #fbfcfb 100%);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .chart {
+      width: 100%;
+      height: 360px;
+      display: block;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    .decision {
+      display: grid;
+      gap: 10px;
+    }
+
+    .decision strong {
+      font-size: 28px;
+      line-height: 1.2;
+    }
+
+    .decision p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .control {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .control input,
+    .control select {
+      width: 100%;
+      border: 0;
+      min-width: 0;
+      padding: 10px 10px;
+      color: var(--ink);
+      background: transparent;
+      outline: none;
+    }
+
+    .control select {
+      padding-right: 28px;
+    }
+
+    .unit {
+      padding: 0 10px;
+      color: var(--muted);
+      font-size: 12px;
+      border-left: 1px solid var(--line);
+      white-space: nowrap;
+    }
+
+    .stepper {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .stepper input {
+      border: 0;
+      min-width: 0;
+      padding: 10px;
+      outline: none;
+      background: transparent;
+    }
+
+    .stepper .unit {
+      border-left: 0;
+    }
+
+    .stepper button {
+      width: 36px;
+      height: 38px;
+      border: 0;
+      border-left: 1px solid var(--line);
+      background: var(--surface-2);
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .stepper button:hover {
+      background: var(--teal-2);
+    }
+
+    .action-button {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+      color: var(--ink);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .action-button:hover {
+      background: var(--teal-2);
+    }
+
+    .range-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--teal);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th,
+    td {
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--line);
+      text-align: right;
+      vertical-align: top;
+    }
+
+    th:first-child,
+    td:first-child,
+    td.text,
+    th.text {
+      text-align: left;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 700;
+      background: #f9fbf9;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .table-scroll {
+      max-height: 520px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .note {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .callout {
+      border: 1px solid var(--line);
+      background: #fbfcfb;
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .callout strong {
+      color: var(--ink);
+    }
+
+    .cost-sections {
+      display: grid;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .settings-split {
+      display: grid;
+      gap: 14px;
+    }
+
+    .settings-block {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fbfcfb;
+      display: grid;
+      gap: 12px;
+    }
+
+    .settings-block h4 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .cost-block {
+      display: grid;
+      gap: 10px;
+    }
+
+    .cost-block h4 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .cost-input {
+      width: 92px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 6px 8px;
+      text-align: right;
+      background: #fff;
+    }
+
+    .cost-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      justify-content: flex-end;
+      white-space: nowrap;
+    }
+
+    .cost-auto {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 24px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--teal-2);
+      color: var(--teal);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge.warn {
+      background: #fff3df;
+      color: #8c500d;
+    }
+
+    .badge.loss {
+      background: #ffe6e3;
+      color: var(--red);
+    }
+
+    .scenario-card {
+      display: grid;
+      gap: 12px;
+      min-height: 180px;
+    }
+
+    .scenario-card h4 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .scenario-card .big {
+      font-size: 24px;
+      font-weight: 760;
+      line-height: 1.05;
+      overflow-wrap: anywhere;
+    }
+
+    .scenario-bar {
+      height: 12px;
+      border-radius: 999px;
+      background: #e2e8e3;
+      overflow: hidden;
+    }
+
+    .scenario-bar span {
+      display: block;
+      height: 100%;
+      width: 50%;
+      background: var(--teal);
+    }
+
+    .scenario-bar.loss span {
+      background: var(--red);
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .positive {
+      color: var(--green);
+    }
+
+    .negative {
+      color: var(--red);
+    }
+
+    @media (max-width: 1180px) {
+      .grid.kpis,
+      .grid.three,
+      .input-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid.two {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 820px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+        height: auto;
+        padding: 14px;
+      }
+
+      .tabs {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .tab-button {
+        font-size: 13px;
+      }
+
+      .content {
+        padding: 14px;
+      }
+
+      .topbar {
+        display: grid;
+      }
+
+      .status-pill {
+        width: 100%;
+        text-align: left;
+      }
+
+      .grid.kpis,
+      .grid.three,
+      .input-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .chart {
+        height: 300px;
+      }
+
+      .chart-wrap {
+        min-height: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>持ち家 vs 賃貸 BI</h1>
+        <p>居住年数終了時にマンション売却まで含めて判定</p>
+      </div>
+
+      <nav class="tabs" aria-label="画面切替">
+        <button class="tab-button active" data-tab="dashboard" type="button">
+          <span>Dashboard</span><span class="mark"></span>
+        </button>
+        <button class="tab-button" data-tab="inputs" type="button">
+          <span>簡単入力</span><span class="mark"></span>
+        </button>
+        <button class="tab-button" data-tab="costs" type="button">
+          <span>詳細入力</span><span class="mark"></span>
+        </button>
+        <button class="tab-button" data-tab="scenario" type="button">
+          <span>Scenario</span><span class="mark"></span>
+        </button>
+        <button class="tab-button" data-tab="cashflow" type="button">
+          <span>Cash Flow</span><span class="mark"></span>
+        </button>
+      </nav>
+
+      <div class="side-metric">
+        <span>居住年数後の判定</span>
+        <strong id="sideDecision">計算中</strong>
+        <span id="sideDiff">差額 --</span>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="topbar">
+        <div>
+          <h2>住まいの意思決定ダッシュボード</h2>
+          <p>入力した居住年数が経過した時点で、購入マンションを売却した場合と賃貸を続けた場合の手元資産を比較します。</p>
+        </div>
+        <div class="status-pill">
+          <span>現在の居住年数</span>
+          <strong id="topYears">10年</strong>
+        </div>
+      </div>
+
+      <section class="view active" id="dashboard">
+        <div class="grid kpis">
+          <div class="kpi" id="decisionKpi">
+            <span class="label">判定</span>
+            <span class="value" id="decisionText">--</span>
+            <span class="sub" id="decisionSub">基準シナリオで比較</span>
+          </div>
+          <div class="kpi">
+            <span class="label">手元資産差</span>
+            <span class="value" id="diffAtYears">--</span>
+            <span class="sub">購入側 - 賃貸側</span>
+          </div>
+          <div class="kpi">
+            <span class="label">損益分岐年数</span>
+            <span class="value" id="breakEvenYear">--</span>
+            <span class="sub">基準シナリオ、最大30年</span>
+          </div>
+          <div class="kpi">
+            <span class="label">家賃補助 実質メリット</span>
+            <span class="value" id="effectiveSubsidy">--</span>
+            <span class="sub">税・社保を概算反映</span>
+          </div>
+        </div>
+
+        <div class="grid two" style="margin-top: 14px;">
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <h3>年次の手元資産差</h3>
+                <p>プラスなら購入有利、マイナスなら賃貸有利。縦線が入力した居住年数です。</p>
+              </div>
+              <span class="badge" id="highlightYearBadge">10年目</span>
+            </div>
+            <div class="chart-wrap">
+              <svg class="chart" id="lineChart" role="img" aria-label="年次の手元資産差グラフ"></svg>
+            </div>
+            <div class="legend">
+              <span class="legend-item"><span class="swatch" style="background: var(--red);"></span>下振れ</span>
+              <span class="legend-item"><span class="swatch" style="background: var(--teal);"></span>基準</span>
+              <span class="legend-item"><span class="swatch" style="background: var(--blue);"></span>上振れ</span>
+            </div>
+          </div>
+
+          <div class="panel decision">
+            <div class="panel-header">
+              <div>
+                <h3>判定の読み方</h3>
+                <p>居住年数終了時にマンション売却を実行した前提です。</p>
+              </div>
+            </div>
+            <strong id="decisionSentence">--</strong>
+            <p id="decisionNarrative">入力値をもとに計算しています。</p>
+            <div class="callout">
+              <strong>比較の考え方:</strong>
+              賃貸側は、購入しなかった頭金・購入時諸費用相当と、毎年の支出差額を運用した前提です。引越し費用は計算に含めていません。
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="inputs">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>主要入力</h3>
+              <p>金額は万円単位です。入力すると全タブの判定がすぐ更新されます。</p>
+            </div>
+          </div>
+
+          <div class="input-grid">
+            <div class="field">
+              <label for="occupancyYears">居住年数</label>
+              <div class="range-row">
+                <input id="occupancyYears" data-input type="range" min="1" max="30" step="1" value="10">
+                <span class="badge" id="yearsBadge">10年</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="husbandIncome">あなたの年収</label>
+              <div class="control">
+                <input id="husbandIncome" data-input type="number" min="0" step="10" value="900">
+                <span class="unit">万円</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="wifeIncome">パートナーの年収</label>
+              <div class="control">
+                <input id="wifeIncome" data-input type="number" min="0" step="10" value="600">
+                <span class="unit">万円</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="husbandLoan">あなたのローン借入額</label>
+              <div class="control">
+                <input id="husbandLoan" data-input type="number" min="0" step="100" value="4500">
+                <span class="unit">万円</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="wifeLoan">パートナーのローン借入額</label>
+              <div class="control">
+                <input id="wifeLoan" data-input type="number" min="0" step="100" value="2500">
+                <span class="unit">万円</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="purchasePrice">購入価格</label>
+              <div class="control">
+                <input id="purchasePrice" data-input type="number" min="0" step="100" value="8000">
+                <span class="unit">万円</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="downPayment">頭金</label>
+              <div class="control">
+                <input id="downPayment" data-input type="number" min="0" step="100" value="1000">
+                <span class="unit">万円</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="mortgageRate">住宅ローン金利</label>
+              <div class="control">
+                <input id="mortgageRate" data-input type="number" min="0" step="0.05" value="1.20">
+                <span class="unit">%/年</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="loanYears">ローン年数</label>
+              <div class="control">
+                <input id="loanYears" data-input type="number" min="1" max="50" step="1" value="35">
+                <span class="unit">年</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="monthlyRent">賃貸の場合の家賃 ※管理費・共益費含まず</label>
+              <div class="control">
+                <input id="monthlyRent" data-input type="number" min="0" step="1" value="25">
+                <span class="unit">万円/月</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="rentSubsidy">賃貸の場合の家賃補助</label>
+              <div class="control">
+                <input id="rentSubsidy" data-input type="number" min="0" step="1" value="6">
+                <span class="unit">万円/月</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="subsidyTreatment">家賃補助の扱い</label>
+              <div class="control">
+                <select id="subsidyTreatment" data-input>
+                  <option value="taxedHusband">現金手当: あなたに課税</option>
+                  <option value="taxedWife">現金手当: パートナーに課税</option>
+                  <option value="nonTaxable">非課税/借上社宅相当</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="investmentReturn">頭金・購入時諸費用を金融投資した場合の利回り</label>
+              <div class="control">
+                <input id="investmentReturn" data-input type="number" min="-10" max="20" step="0.1" value="3.0">
+                <span class="unit">%/年</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top: 14px;">
+          <div class="panel-header">
+            <div>
+              <h3>物件価格上昇率</h3>
+              <p>下振れ・基準・上振れを上下ボタンで調整できます。</p>
+            </div>
+          </div>
+          <div class="input-grid">
+            <div class="field">
+              <label for="downsideRate">下振れ</label>
+              <div class="stepper">
+                <span class="unit">年率</span>
+                <input id="downsideRate" data-input type="number" step="0.1" value="-1.0">
+                <span class="unit">%</span>
+                <button type="button" data-step="-0.1" data-target="downsideRate" aria-label="下振れを下げる">-</button>
+                <button type="button" data-step="0.1" data-target="downsideRate" aria-label="下振れを上げる">+</button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="baseRate">基準</label>
+              <div class="stepper">
+                <span class="unit">年率</span>
+                <input id="baseRate" data-input type="number" step="0.1" value="0.5">
+                <span class="unit">%</span>
+                <button type="button" data-step="-0.1" data-target="baseRate" aria-label="基準を下げる">-</button>
+                <button type="button" data-step="0.1" data-target="baseRate" aria-label="基準を上げる">+</button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="upsideRate">上振れ</label>
+              <div class="stepper">
+                <span class="unit">年率</span>
+                <input id="upsideRate" data-input type="number" step="0.1" value="2.0">
+                <span class="unit">%</span>
+                <button type="button" data-step="-0.1" data-target="upsideRate" aria-label="上振れを下げる">-</button>
+                <button type="button" data-step="0.1" data-target="upsideRate" aria-label="上振れを上げる">+</button>
+              </div>
+            </div>
+          </div>
+          <p class="note" id="financingNote">資金整合性を確認中です。</p>
+        </div>
+      </section>
+
+      <section class="view" id="costs">
+        <div class="grid two">
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <h3>Cost Model 設定</h3>
+                <p>税金系は自動計算、実務費用は入力式で調整します。</p>
+              </div>
+              <span class="badge warn" id="assessmentModeBadge">評価額 推定中</span>
+            </div>
+
+            <div class="settings-split">
+              <div class="settings-block">
+                <h4>持ち家側</h4>
+                <div class="input-grid">
+                  <div class="field">
+                    <label for="brokerageEnabled">仲介</label>
+                    <div class="control">
+                      <select id="brokerageEnabled" data-input>
+                        <option value="yes">仲介あり</option>
+                        <option value="no">仲介なし</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="electronicContract">売買契約</label>
+                    <div class="control">
+                      <select id="electronicContract" data-input>
+                        <option value="no">紙契約</option>
+                        <option value="yes">電子契約</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="residentialReduction">住宅用軽減</label>
+                    <div class="control">
+                      <select id="residentialReduction" data-input>
+                        <option value="yes">適用あり</option>
+                        <option value="no">適用なし</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="specialDeduction">居住用3,000万円控除</label>
+                    <div class="control">
+                      <select id="specialDeduction" data-input>
+                        <option value="yes">適用あり</option>
+                        <option value="no">適用なし</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="landAssessment">土地 固定資産税評価額</label>
+                    <div class="control">
+                      <input id="landAssessment" data-input type="number" min="0" step="100" placeholder="自動推定">
+                      <span class="unit">万円</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="buildingAssessment">建物 固定資産税評価額</label>
+                    <div class="control">
+                      <input id="buildingAssessment" data-input type="number" min="0" step="100" placeholder="自動推定">
+                      <span class="unit">万円</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>固定資産税評価額</label>
+                    <button class="action-button" id="resetAssessmentButton" type="button">自動推定に戻す</button>
+                  </div>
+                  <div class="field">
+                    <label for="floorArea">専有面積</label>
+                    <div class="control">
+                      <input id="floorArea" data-input type="number" min="0" step="1" value="70">
+                      <span class="unit">㎡</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="landShareArea">土地持分面積</label>
+                    <div class="control">
+                      <input id="landShareArea" data-input type="number" min="1" step="1" value="20">
+                      <span class="unit">㎡</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="newSeismic">耐震要件</label>
+                    <div class="control">
+                      <select id="newSeismic" data-input>
+                        <option value="yes">新耐震相当</option>
+                        <option value="no">軽減なし</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="ownerFeeMode">持ち家 管理費入力方式</label>
+                    <div class="control">
+                      <select id="ownerFeeMode" data-input>
+                        <option value="estimated">面積から推定</option>
+                        <option value="monthly">月額入力</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="ownerManagementMonthly">持ち家 管理費</label>
+                    <div class="control">
+                      <input id="ownerManagementMonthly" data-input type="number" min="0" step="0.1" value="2.1">
+                      <span class="unit">万円/月</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="ownerRepairReserveMonthly">持ち家 修繕積立金</label>
+                    <div class="control">
+                      <input id="ownerRepairReserveMonthly" data-input type="number" min="0" step="0.1" value="1.8">
+                      <span class="unit">万円/月</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="ownerManagementPerSqm">管理費 推定単価</label>
+                    <div class="control">
+                      <input id="ownerManagementPerSqm" data-input type="number" min="0" step="10" value="300">
+                      <span class="unit">円/㎡月</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="ownerRepairReservePerSqm">修繕積立金 推定単価</label>
+                    <div class="control">
+                      <input id="ownerRepairReservePerSqm" data-input type="number" min="0" step="10" value="250">
+                      <span class="unit">円/㎡月</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="maintenanceRate">修繕・保険など維持費率</label>
+                    <div class="control">
+                      <input id="maintenanceRate" data-input type="number" min="0" step="0.05" value="0.25">
+                      <span class="unit">%/年</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="judicialScrivenerFee">司法書士報酬</label>
+                    <div class="control">
+                      <input id="judicialScrivenerFee" data-input type="number" min="0" step="1" value="15">
+                      <span class="unit">万円</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="loanAdminFee">ローン事務手数料</label>
+                    <div class="control">
+                      <input id="loanAdminFee" data-input type="number" min="0" step="1" value="33">
+                      <span class="unit">万円</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="fireInsuranceFee">火災保険など</label>
+                    <div class="control">
+                      <input id="fireInsuranceFee" data-input type="number" min="0" step="1" value="20">
+                      <span class="unit">万円</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="mortgageCancelFee">抵当権抹消・司法書士費用</label>
+                    <div class="control">
+                      <input id="mortgageCancelFee" data-input type="number" min="0" step="1" value="3">
+                      <span class="unit">万円</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-block">
+                <h4>賃貸側</h4>
+                <div class="input-grid">
+                  <div class="field">
+                    <label for="rentManagementMode">賃貸 管理費・共益費入力方式</label>
+                    <div class="control">
+                      <select id="rentManagementMode" data-input>
+                        <option value="estimated">家賃から自動推定</option>
+                        <option value="monthly">月額入力</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="rentManagementRate">賃貸 管理費・共益費率</label>
+                    <div class="control">
+                      <input id="rentManagementRate" data-input type="number" min="0" step="0.5" value="8">
+                      <span class="unit">%/月</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="rentManagementMonthly">賃貸 管理費・共益費額</label>
+                    <div class="control">
+                      <input id="rentManagementMonthly" data-input type="number" min="0" step="0.1" value="2.0">
+                      <span class="unit">万円/月</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="renewalRate">更新料率</label>
+                    <div class="control">
+                      <input id="renewalRate" data-input type="number" min="0" step="10" value="100">
+                      <span class="unit">%/2年</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p class="note" id="costModelNote">固定資産税評価額が未入力の場合は、購入価格から土地・建物評価額を推定します。</p>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <h3>あなた/パートナー別ローン控除 概算</h3>
+                <p>入力した居住年数までの累計です。</p>
+              </div>
+            </div>
+            <div class="grid">
+              <div class="kpi">
+                <span class="label">あなたの累計控除</span>
+                <span class="value" id="husbandCredit">--</span>
+                <span class="sub" id="husbandTaxCap">税額上限 --</span>
+              </div>
+              <div class="kpi">
+                <span class="label">パートナーの累計控除</span>
+                <span class="value" id="wifeCredit">--</span>
+                <span class="sub" id="wifeTaxCap">税額上限 --</span>
+              </div>
+              <div class="callout">
+                控除は年末ローン残高の0.7%、最大13年として概算しています。借入限度額や住宅性能別の細かな制度差は含めていません。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cost-sections" id="costSections"></div>
+      </section>
+
+      <section class="view" id="scenario">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>物件価格シナリオ比較</h3>
+              <p>入力した居住年数後の手元資産差を、下振れ・基準・上振れで比較します。</p>
+            </div>
+          </div>
+          <div class="grid three" id="scenarioCards"></div>
+        </div>
+      </section>
+
+      <section class="view" id="cashflow">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <h3>年次キャッシュフロー</h3>
+              <p>基準シナリオの年次推移です。居住年数終了時に売却した場合の購入側手元額を表示します。</p>
+            </div>
+            <span class="badge" id="tableHighlightBadge">10年目を判定</span>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>年</th>
+                  <th>購入側 年間支出</th>
+                  <th>賃貸側 年間支出</th>
+                  <th>売却価格</th>
+                  <th>ローン残債</th>
+                  <th>購入側手元額</th>
+                  <th>賃貸側運用資産</th>
+                  <th>差額</th>
+                </tr>
+              </thead>
+              <tbody id="cashflowRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const ids = [
+      "occupancyYears",
+      "husbandIncome",
+      "wifeIncome",
+      "husbandLoan",
+      "wifeLoan",
+      "purchasePrice",
+      "downPayment",
+      "mortgageRate",
+      "loanYears",
+      "monthlyRent",
+      "rentSubsidy",
+      "subsidyTreatment",
+      "investmentReturn",
+      "brokerageEnabled",
+      "electronicContract",
+      "residentialReduction",
+      "specialDeduction",
+      "landAssessment",
+      "buildingAssessment",
+      "floorArea",
+      "landShareArea",
+      "newSeismic",
+      "ownerFeeMode",
+      "ownerManagementMonthly",
+      "ownerRepairReserveMonthly",
+      "ownerManagementPerSqm",
+      "ownerRepairReservePerSqm",
+      "maintenanceRate",
+      "judicialScrivenerFee",
+      "loanAdminFee",
+      "fireInsuranceFee",
+      "mortgageCancelFee",
+      "rentManagementMode",
+      "rentManagementRate",
+      "rentManagementMonthly",
+      "renewalRate",
+      "downsideRate",
+      "baseRate",
+      "upsideRate"
+    ];
+
+    const yen = (manYen) => Number(manYen || 0) * 10000;
+    const pct = (value) => Number(value || 0) / 100;
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+    const scenarioMeta = {
+      downside: { label: "下振れ", color: "#bd3d3d" },
+      base: { label: "基準", color: "#167c80" },
+      upside: { label: "上振れ", color: "#2f65b0" }
+    };
+    const fundingFields = new Set(["purchasePrice", "downPayment", "husbandLoan", "wifeLoan"]);
+
+    function readManYen(id) {
+      return Math.max(0, Number(document.getElementById(id).value || 0));
+    }
+
+    function writeManYen(id, value) {
+      const rounded = Math.round(Math.max(0, value) * 10) / 10;
+      document.getElementById(id).value = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+    }
+
+    function balanceFunding(changedId) {
+      let purchase = readManYen("purchasePrice");
+      let husband = readManYen("husbandLoan");
+      let wife = readManYen("wifeLoan");
+      let down = readManYen("downPayment");
+
+      if (changedId === "purchasePrice") {
+        down = Math.min(down, purchase);
+        wife = Math.min(wife, purchase - down);
+        husband = purchase - down - wife;
+      } else if (changedId === "husbandLoan") {
+        down = Math.min(down, purchase);
+        const loanRoom = purchase - down;
+        husband = Math.min(husband, loanRoom);
+        wife = loanRoom - husband;
+      } else if (changedId === "wifeLoan") {
+        down = Math.min(down, purchase);
+        const loanRoom = purchase - down;
+        wife = Math.min(wife, loanRoom);
+        husband = loanRoom - wife;
+      } else if (changedId === "downPayment") {
+        wife = Math.min(wife, purchase);
+        down = Math.min(down, purchase - wife);
+        husband = purchase - wife - down;
+      } else {
+        husband = Math.min(husband, purchase);
+        wife = Math.min(wife, purchase - husband);
+        down = purchase - husband - wife;
+      }
+
+      writeManYen("purchasePrice", purchase);
+      writeManYen("husbandLoan", husband);
+      writeManYen("wifeLoan", wife);
+      writeManYen("downPayment", down);
+    }
+
+    function readInputs() {
+      const v = Object.fromEntries(ids.map((id) => [id, document.getElementById(id).value]));
+      return {
+        occupancyYears: clamp(Math.round(Number(v.occupancyYears || 1)), 1, 30),
+        husbandIncome: yen(v.husbandIncome),
+        wifeIncome: yen(v.wifeIncome),
+        husbandLoan: yen(v.husbandLoan),
+        wifeLoan: yen(v.wifeLoan),
+        purchasePrice: yen(v.purchasePrice),
+        downPayment: yen(v.downPayment),
+        mortgageRate: pct(v.mortgageRate),
+        loanYears: clamp(Math.round(Number(v.loanYears || 1)), 1, 50),
+        monthlyRent: yen(v.monthlyRent),
+        rentSubsidy: yen(v.rentSubsidy),
+        subsidyTreatment: v.subsidyTreatment,
+        investmentReturn: pct(v.investmentReturn),
+        brokerageEnabled: v.brokerageEnabled === "yes",
+        electronicContract: v.electronicContract === "yes",
+        residentialReduction: v.residentialReduction === "yes",
+        specialDeduction: v.specialDeduction === "yes",
+        landAssessment: yen(v.landAssessment),
+        buildingAssessment: yen(v.buildingAssessment),
+        floorArea: Math.max(0, Number(v.floorArea || 0)),
+        landShareArea: Math.max(1, Number(v.landShareArea || 1)),
+        newSeismic: v.newSeismic === "yes",
+        ownerFeeMode: v.ownerFeeMode,
+        ownerManagementMonthly: yen(v.ownerManagementMonthly),
+        ownerRepairReserveMonthly: yen(v.ownerRepairReserveMonthly),
+        ownerManagementPerSqm: Math.max(0, Number(v.ownerManagementPerSqm || 0)),
+        ownerRepairReservePerSqm: Math.max(0, Number(v.ownerRepairReservePerSqm || 0)),
+        maintenanceRate: pct(v.maintenanceRate),
+        judicialScrivenerFee: yen(v.judicialScrivenerFee),
+        loanAdminFee: yen(v.loanAdminFee),
+        fireInsuranceFee: yen(v.fireInsuranceFee),
+        mortgageCancelFee: yen(v.mortgageCancelFee),
+        rentManagementMode: v.rentManagementMode,
+        rentManagementRate: pct(v.rentManagementRate),
+        rentManagementMonthly: yen(v.rentManagementMonthly),
+        renewalRate: pct(v.renewalRate),
+        rates: {
+          downside: pct(v.downsideRate),
+          base: pct(v.baseRate),
+          upside: pct(v.upsideRate)
+        }
+      };
+    }
+
+    function salaryDeduction(salary) {
+      if (salary <= 1_625_000) return 550_000;
+      if (salary <= 1_800_000) return salary * 0.4 - 100_000;
+      if (salary <= 3_600_000) return salary * 0.3 + 80_000;
+      if (salary <= 6_600_000) return salary * 0.2 + 440_000;
+      if (salary <= 8_500_000) return salary * 0.1 + 1_100_000;
+      return 1_950_000;
+    }
+
+    function incomeTaxFromTaxable(taxable) {
+      const t = Math.max(0, taxable);
+      if (t <= 1_950_000) return t * 0.05;
+      if (t <= 3_300_000) return t * 0.10 - 97_500;
+      if (t <= 6_950_000) return t * 0.20 - 427_500;
+      if (t <= 9_000_000) return t * 0.23 - 636_000;
+      if (t <= 18_000_000) return t * 0.33 - 1_536_000;
+      if (t <= 40_000_000) return t * 0.40 - 2_796_000;
+      return t * 0.45 - 4_796_000;
+    }
+
+    function taxProfile(salary) {
+      const socialInsurance = Math.max(0, salary) * 0.145;
+      const employmentIncome = Math.max(0, salary - salaryDeduction(salary));
+      const taxableIncomeTax = Math.max(0, employmentIncome - socialInsurance - 480_000);
+      const taxableResidence = Math.max(0, employmentIncome - socialInsurance - 430_000);
+      const incomeTax = Math.max(0, incomeTaxFromTaxable(taxableIncomeTax));
+      const residenceTax = taxableResidence * 0.10;
+      const mortgageCapacity = incomeTax + Math.min(residenceTax, 97_500);
+      return {
+        incomeTax,
+        residenceTax,
+        socialInsurance,
+        takeHome: salary - incomeTax - residenceTax - socialInsurance,
+        mortgageCapacity
+      };
+    }
+
+    function annualPayment(principal, rate, years) {
+      if (principal <= 0) return 0;
+      const months = Math.max(1, years * 12);
+      const monthlyRate = rate / 12;
+      if (monthlyRate === 0) return principal / years;
+      const factor = Math.pow(1 + monthlyRate, months);
+      return (principal * monthlyRate * factor / (factor - 1)) * 12;
+    }
+
+    function loanSnapshot(principal, rate, years, year) {
+      if (principal <= 0 || year <= 0) {
+        return { balance: principal, annualPay: 0 };
+      }
+      const totalMonths = Math.max(1, years * 12);
+      const paidMonthsBefore = Math.min((year - 1) * 12, totalMonths);
+      const paidMonthsAfter = Math.min(year * 12, totalMonths);
+      const monthsThisYear = Math.max(0, paidMonthsAfter - paidMonthsBefore);
+      const monthlyRate = rate / 12;
+      let monthlyPay;
+      let balance;
+      if (monthlyRate === 0) {
+        monthlyPay = principal / totalMonths;
+        balance = Math.max(0, principal - monthlyPay * paidMonthsAfter);
+      } else {
+        const factor = Math.pow(1 + monthlyRate, totalMonths);
+        monthlyPay = principal * monthlyRate * factor / (factor - 1);
+        balance = principal * Math.pow(1 + monthlyRate, paidMonthsAfter) -
+          monthlyPay * ((Math.pow(1 + monthlyRate, paidMonthsAfter) - 1) / monthlyRate);
+      }
+      return {
+        balance: Math.max(0, balance),
+        annualPay: monthlyPay * monthsThisYear
+      };
+    }
+
+    function effectiveSubsidyAnnual(input) {
+      const annualSubsidy = input.rentSubsidy * 12;
+      if (input.subsidyTreatment === "nonTaxable") return annualSubsidy;
+      const baseSalary = input.subsidyTreatment === "taxedWife" ? input.wifeIncome : input.husbandIncome;
+      const before = taxProfile(baseSalary).takeHome;
+      const after = taxProfile(baseSalary + annualSubsidy).takeHome;
+      return Math.max(0, after - before);
+    }
+
+    function brokerageFee(price, enabled) {
+      if (!enabled || price <= 0) return 0;
+      let base = 0;
+      if (price <= 2_000_000) base = price * 0.05;
+      else if (price <= 4_000_000) base = price * 0.04 + 20_000;
+      else base = price * 0.03 + 60_000;
+      return base * 1.10;
+    }
+
+    function stampTax(amount, electronicContract) {
+      if (electronicContract || amount < 10_000) return 0;
+      if (amount <= 100_000) return 200;
+      if (amount <= 500_000) return 200;
+      if (amount <= 1_000_000) return 500;
+      if (amount <= 5_000_000) return 1_000;
+      if (amount <= 10_000_000) return 5_000;
+      if (amount <= 50_000_000) return 10_000;
+      if (amount <= 100_000_000) return 30_000;
+      if (amount <= 500_000_000) return 60_000;
+      if (amount <= 1_000_000_000) return 160_000;
+      if (amount <= 5_000_000_000) return 320_000;
+      return 480_000;
+    }
+
+    function assessmentValues(input) {
+      const estimatedLand = input.purchasePrice * 0.35;
+      const estimatedBuilding = input.purchasePrice * 0.25;
+      const land = input.landAssessment > 0 ? input.landAssessment : estimatedLand;
+      const building = input.buildingAssessment > 0 ? input.buildingAssessment : estimatedBuilding;
+      return {
+        land,
+        building,
+        estimated: input.landAssessment <= 0 || input.buildingAssessment <= 0
+      };
+    }
+
+    function residentialReliefApplies(input) {
+      return input.residentialReduction && input.newSeismic && input.floorArea >= 50 && input.floorArea <= 240;
+    }
+
+    function registrationTax(input, assessment) {
+      const loanTotal = input.husbandLoan + input.wifeLoan;
+      const relief = residentialReliefApplies(input);
+      const landTransfer = assessment.land * (input.residentialReduction ? 0.015 : 0.02);
+      const buildingTransfer = assessment.building * (relief ? 0.003 : 0.02);
+      const mortgageSetting = loanTotal * (relief ? 0.001 : 0.004);
+      return {
+        landTransfer,
+        buildingTransfer,
+        mortgageSetting,
+        total: landTransfer + buildingTransfer + mortgageSetting
+      };
+    }
+
+    function acquisitionTax(input, assessment) {
+      const relief = residentialReliefApplies(input);
+      const buildingDeduction = relief ? Math.min(assessment.building, 12_000_000) : 0;
+      const buildingTax = Math.max(0, assessment.building - buildingDeduction) * 0.03;
+      const landTaxBase = assessment.land * 0.5;
+      const landRawTax = landTaxBase * 0.03;
+      const perSqmLandValue = landTaxBase / Math.max(1, input.landShareArea);
+      const landReliefByArea = perSqmLandValue * Math.min(input.floorArea * 2, 200) * 0.03;
+      const landRelief = relief ? Math.max(45_000, landReliefByArea) : 0;
+      const landTax = Math.max(0, landRawTax - landRelief);
+      return {
+        landTax,
+        buildingTax,
+        total: landTax + buildingTax
+      };
+    }
+
+    function annualPropertyTax(input, assessment) {
+      if (!input.residentialReduction) return (assessment.land + assessment.building) * 0.017;
+      const landFixedAssetTax = assessment.land / 6 * 0.014;
+      const landCityPlanningTax = assessment.land / 3 * 0.003;
+      const buildingTax = assessment.building * 0.017;
+      return landFixedAssetTax + landCityPlanningTax + buildingTax;
+    }
+
+    function capitalGainsTax(input, year, salePrice, sellingCosts, purchaseCosts) {
+      const acquisitionCost = input.purchasePrice + purchaseCosts;
+      const gain = Math.max(0, salePrice - acquisitionCost - sellingCosts);
+      const taxableGain = Math.max(0, gain - (input.specialDeduction ? 30_000_000 : 0));
+      const rate = year > 5 ? 0.20315 : 0.3963;
+      return taxableGain * rate;
+    }
+
+    function ownerMonthlyFees(input) {
+      if (input.ownerFeeMode === "monthly") {
+        return {
+          management: input.ownerManagementMonthly,
+          repairReserve: input.ownerRepairReserveMonthly,
+          mode: "月額入力"
+        };
+      }
+      return {
+        management: input.floorArea * input.ownerManagementPerSqm,
+        repairReserve: input.floorArea * input.ownerRepairReservePerSqm,
+        mode: "面積推定"
+      };
+    }
+
+    function rentalMonthlyManagement(input) {
+      if (input.rentManagementMode === "monthly") {
+        return {
+          amount: input.rentManagementMonthly,
+          mode: "月額入力"
+        };
+      }
+      return {
+        amount: input.monthlyRent * input.rentManagementRate,
+        mode: "自動推定"
+      };
+    }
+
+    function costModel(input, year, appreciationRate) {
+      const assessment = assessmentValues(input);
+      const registration = registrationTax(input, assessment);
+      const acquisition = acquisitionTax(input, assessment);
+      const purchaseBrokerage = brokerageFee(input.purchasePrice, input.brokerageEnabled);
+      const purchaseStamp = stampTax(input.purchasePrice, input.electronicContract);
+      const purchaseCosts = purchaseBrokerage + purchaseStamp + registration.total + acquisition.total +
+        input.judicialScrivenerFee + input.loanAdminFee + input.fireInsuranceFee;
+      const propertyTax = annualPropertyTax(input, assessment);
+      const ownerFees = ownerMonthlyFees(input);
+      const ownerAnnualFees = (ownerFees.management + ownerFees.repairReserve) * 12;
+      const maintenance = input.purchasePrice * input.maintenanceRate;
+      const salePrice = input.purchasePrice * Math.pow(1 + appreciationRate, year);
+      const saleBrokerage = brokerageFee(salePrice, input.brokerageEnabled);
+      const saleStamp = stampTax(salePrice, input.electronicContract);
+      const baseSellingCosts = saleBrokerage + saleStamp + input.mortgageCancelFee;
+      const capitalTax = capitalGainsTax(input, year, salePrice, baseSellingCosts, purchaseCosts);
+      const saleCost = baseSellingCosts + capitalTax;
+      const rentalManagement = rentalMonthlyManagement(input);
+      const renewal = input.monthlyRent * input.renewalRate;
+      return {
+        assessment,
+        registration,
+        acquisition,
+        purchaseBrokerage,
+        purchaseStamp,
+        purchaseCosts,
+        propertyTax,
+        ownerManagementFee: ownerFees.management,
+        ownerRepairReserve: ownerFees.repairReserve,
+        ownerFeeModeLabel: ownerFees.mode,
+        ownerAnnualFees,
+        maintenance,
+        salePrice,
+        saleBrokerage,
+        saleStamp,
+        mortgageCancel: input.mortgageCancelFee,
+        capitalTax,
+        saleCost,
+        rentalManagement: rentalManagement.amount,
+        rentalManagementModeLabel: rentalManagement.mode,
+        renewal
+      };
+    }
+
+    function mortgageCreditForYear(input, person, year, balance) {
+      if (year > 13 || balance <= 0) return 0;
+      const income = person === "husband" ? input.husbandIncome : input.wifeIncome;
+      return Math.min(balance * 0.007, taxProfile(income).mortgageCapacity);
+    }
+
+    function computeSeries(input, appreciationRate) {
+      const initialCost = costModel(input, 1, appreciationRate).purchaseCosts;
+      let rentalAsset = input.downPayment + initialCost;
+      const rows = [];
+      const effectiveSubsidy = effectiveSubsidyAnnual(input);
+
+      for (let year = 1; year <= 30; year += 1) {
+        rentalAsset *= 1 + input.investmentReturn;
+        const costs = costModel(input, year, appreciationRate);
+        const husband = loanSnapshot(input.husbandLoan, input.mortgageRate, input.loanYears, year);
+        const wife = loanSnapshot(input.wifeLoan, input.mortgageRate, input.loanYears, year);
+        const husbandCredit = mortgageCreditForYear(input, "husband", year, husband.balance);
+        const wifeCredit = mortgageCreditForYear(input, "wife", year, wife.balance);
+        const mortgageCredit = husbandCredit + wifeCredit;
+        const buyOutflow = husband.annualPay + wife.annualPay + costs.propertyTax + costs.ownerAnnualFees + costs.maintenance - mortgageCredit;
+        const monthlyRentNet = Math.max(0, input.monthlyRent + costs.rentalManagement - effectiveSubsidy / 12);
+        const rentOutflow = monthlyRentNet * 12 + (year % 2 === 0 ? costs.renewal : 0);
+        rentalAsset += buyOutflow - rentOutflow;
+        const loanBalance = husband.balance + wife.balance;
+        const purchaseNet = costs.salePrice - costs.saleCost - loanBalance;
+        rows.push({
+          year,
+          buyOutflow,
+          rentOutflow,
+          salePrice: costs.salePrice,
+          saleCost: costs.saleCost,
+          loanBalance,
+          purchaseNet,
+          rentalAsset,
+          diff: purchaseNet - rentalAsset,
+          husbandCredit,
+          wifeCredit,
+          mortgageCredit
+        });
+      }
+      return rows;
+    }
+
+    function computeAll(input) {
+      const series = {
+        downside: computeSeries(input, input.rates.downside),
+        base: computeSeries(input, input.rates.base),
+        upside: computeSeries(input, input.rates.upside)
+      };
+      return { input, series };
+    }
+
+    function formatYen(value) {
+      const sign = value < 0 ? "-" : "";
+      const abs = Math.abs(value);
+      if (abs >= 100_000_000) return `${sign}${(abs / 100_000_000).toFixed(2)}億円`;
+      if (abs >= 10_000) return `${sign}${Math.round(abs / 10_000).toLocaleString("ja-JP")}万円`;
+      return `${sign}${Math.round(abs).toLocaleString("ja-JP")}円`;
+    }
+
+    function formatPct(value) {
+      return `${(value * 100).toFixed(1)}%`;
+    }
+
+    function svg(tag, attrs = {}, children = []) {
+      const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+      children.forEach((child) => el.appendChild(child));
+      return el;
+    }
+
+    function drawLineChart(all, input) {
+      const chart = document.getElementById("lineChart");
+      chart.innerHTML = "";
+      const width = 920;
+      const height = 360;
+      const pad = { left: 74, right: 28, top: 26, bottom: 50 };
+      chart.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+      const allDiffs = Object.values(all.series).flat().map((row) => row.diff);
+      allDiffs.push(0);
+      const min = Math.min(...allDiffs);
+      const max = Math.max(...allDiffs);
+      const spread = Math.max(1, max - min);
+      const yMin = min - spread * 0.12;
+      const yMax = max + spread * 0.12;
+
+      const x = (year) => pad.left + ((year - 1) / 29) * (width - pad.left - pad.right);
+      const y = (value) => pad.top + (1 - (value - yMin) / (yMax - yMin)) * (height - pad.top - pad.bottom);
+
+      const grid = svg("g", { stroke: "#d7ded8", "stroke-width": "1" });
+      for (let i = 0; i <= 4; i += 1) {
+        const gy = pad.top + (i / 4) * (height - pad.top - pad.bottom);
+        grid.appendChild(svg("line", { x1: pad.left, y1: gy, x2: width - pad.right, y2: gy }));
+        const value = yMax - (i / 4) * (yMax - yMin);
+        const label = svg("text", { x: pad.left - 10, y: gy + 4, "text-anchor": "end", fill: "#697579", "font-size": "12" });
+        label.textContent = formatYen(value);
+        grid.appendChild(label);
+      }
+      chart.appendChild(grid);
+
+      const zeroY = y(0);
+      chart.appendChild(svg("line", {
+        x1: pad.left,
+        y1: zeroY,
+        x2: width - pad.right,
+        y2: zeroY,
+        stroke: "#9eaaa4",
+        "stroke-width": "1.2"
+      }));
+
+      [1, 5, 10, 15, 20, 25, 30].forEach((year) => {
+        const tx = x(year);
+        chart.appendChild(svg("line", { x1: tx, y1: height - pad.bottom, x2: tx, y2: height - pad.bottom + 5, stroke: "#9eaaa4" }));
+        const label = svg("text", { x: tx, y: height - 20, "text-anchor": "middle", fill: "#697579", "font-size": "12" });
+        label.textContent = `${year}年`;
+        chart.appendChild(label);
+      });
+
+      Object.entries(all.series).forEach(([key, rows]) => {
+        const meta = scenarioMeta[key];
+        const points = rows.map((row) => `${x(row.year)},${y(row.diff)}`).join(" ");
+        chart.appendChild(svg("polyline", {
+          points,
+          fill: "none",
+          stroke: meta.color,
+          "stroke-width": key === "base" ? 3 : 2,
+          "stroke-linecap": "round",
+          "stroke-linejoin": "round",
+          opacity: key === "base" ? 1 : 0.82
+        }));
+      });
+
+      const hx = x(input.occupancyYears);
+      chart.appendChild(svg("line", {
+        x1: hx,
+        y1: pad.top,
+        x2: hx,
+        y2: height - pad.bottom,
+        stroke: "#1b2428",
+        "stroke-width": "1.5",
+        "stroke-dasharray": "5 5"
+      }));
+
+      Object.entries(all.series).forEach(([key, rows]) => {
+        const row = rows[input.occupancyYears - 1];
+        const meta = scenarioMeta[key];
+        chart.appendChild(svg("circle", {
+          cx: hx,
+          cy: y(row.diff),
+          r: key === "base" ? 6 : 4,
+          fill: meta.color,
+          stroke: "#ffffff",
+          "stroke-width": "2"
+        }));
+      });
+    }
+
+    function updateKpis(all) {
+      const input = all.input;
+      const baseRow = all.series.base[input.occupancyYears - 1];
+      const isBuyWin = baseRow.diff >= 0;
+      const decision = isBuyWin ? "購入が有利" : "賃貸が有利";
+      const absDiff = formatYen(Math.abs(baseRow.diff));
+      const kpi = document.getElementById("decisionKpi");
+      kpi.classList.toggle("good", isBuyWin);
+      kpi.classList.toggle("bad", !isBuyWin);
+      document.getElementById("decisionText").textContent = decision;
+      document.getElementById("decisionSub").textContent = `${input.occupancyYears}年後、基準シナリオ`;
+      document.getElementById("diffAtYears").textContent = formatYen(baseRow.diff);
+      document.getElementById("sideDecision").textContent = decision;
+      document.getElementById("sideDiff").textContent = `差額 ${formatYen(baseRow.diff)}`;
+      document.getElementById("topYears").textContent = `${input.occupancyYears}年`;
+      document.getElementById("yearsBadge").textContent = `${input.occupancyYears}年`;
+      document.getElementById("highlightYearBadge").textContent = `${input.occupancyYears}年目`;
+      document.getElementById("tableHighlightBadge").textContent = `${input.occupancyYears}年目を判定`;
+      document.getElementById("effectiveSubsidy").textContent = `${formatYen(effectiveSubsidyAnnual(input) / 12)}/月`;
+
+      const breakEven = all.series.base.find((row) => row.diff >= 0);
+      document.getElementById("breakEvenYear").textContent = breakEven ? `${breakEven.year}年目` : "30年超";
+      document.getElementById("decisionSentence").textContent =
+        `${input.occupancyYears}年後は${decision}です`;
+      document.getElementById("decisionNarrative").textContent =
+        `${decision}側が${absDiff}上回ります。売却価格、売却費用、ローン残債、賃貸側の運用資産をすべて反映した差額です。`;
+
+      const gap = input.purchasePrice - input.downPayment - input.husbandLoan - input.wifeLoan;
+      const note = document.getElementById("financingNote");
+      if (Math.abs(gap) > 100) {
+        note.textContent = `資金合計に${formatYen(gap)}のズレがあります。入力欄を変更すると自動で再調整します。`;
+        note.className = "note negative";
+      } else {
+        note.textContent = "資金合計ロック中: 頭金 + あなたのローン + パートナーのローン = 購入価格 になるよう自動調整しています。購入価格や頭金を変えるとあなたのローン、あなたのローンを変えるとパートナーのローン、パートナーのローンを変えるとあなたのローンで調整します。";
+        note.className = "note positive";
+      }
+    }
+
+    function updateCosts(all) {
+      const input = all.input;
+      const costsNow = costModel(input, input.occupancyYears, input.rates.base);
+      document.getElementById("assessmentModeBadge").textContent =
+        costsNow.assessment.estimated ? "評価額 推定中" : "評価額 入力済み";
+      document.getElementById("assessmentModeBadge").className =
+        costsNow.assessment.estimated ? "badge warn" : "badge";
+      document.getElementById("costModelNote").textContent = costsNow.assessment.estimated
+        ? "固定資産税評価額が未入力のため、土地は購入価格の35%、建物は25%として推定しています。"
+        : "入力された固定資産税評価額を使って、税金系の費用を計算しています。";
+
+      const auto = '<span class="cost-auto">自動計算</span>';
+      const yesNo = (value) => value ? "あり" : "なし";
+      const sections = [
+        {
+          title: "購入時",
+          rows: [
+            ["購入仲介手数料", costsNow.purchaseBrokerage, "購入価格から上限額を自動計算", yesNo(input.brokerageEnabled)],
+            ["売買契約 印紙税", costsNow.purchaseStamp, "不動産売買契約書の軽減税率表", input.electronicContract ? "電子契約: 0円" : auto],
+            ["登録免許税", costsNow.registration.total, "土地移転・建物移転・抵当権設定を評価額/ローン額から計算", input.residentialReduction ? "住宅用軽減あり" : "軽減なし"],
+            ["不動産取得税", costsNow.acquisition.total, "土地/建物評価額・専有面積・耐震要件から概算", residentialReliefApplies(input) ? "住宅軽減あり" : "軽減なし"],
+            ["司法書士報酬", input.judicialScrivenerFee, "入力額", `${formatYen(input.judicialScrivenerFee)}`],
+            ["ローン事務手数料", input.loanAdminFee, "入力額", `${formatYen(input.loanAdminFee)}`],
+            ["火災保険など", input.fireInsuranceFee, "入力額", `${formatYen(input.fireInsuranceFee)}`],
+            ["購入時費用 合計", costsNow.purchaseCosts, "上記合計", auto]
+          ]
+        },
+        {
+          title: "保有中",
+          rows: [
+            ["固定資産税・都市計画税", costsNow.propertyTax, "土地評価額は住宅用地軽減、建物評価額は標準税率で概算", costsNow.assessment.estimated ? "評価額推定" : "評価額入力済み"],
+            ["持ち家 管理費", costsNow.ownerManagementFee * 12, `${formatYen(costsNow.ownerManagementFee)} / 月 × 12か月`, costsNow.ownerFeeModeLabel],
+            ["持ち家 修繕積立金", costsNow.ownerRepairReserve * 12, `${formatYen(costsNow.ownerRepairReserve)} / 月 × 12か月`, costsNow.ownerFeeModeLabel],
+            ["修繕・保険など維持費", costsNow.maintenance, `購入価格 × ${formatPct(input.maintenanceRate)} / 年`, `${formatPct(input.maintenanceRate)} / 年`]
+          ]
+        },
+        {
+          title: "売却時",
+          rows: [
+            ["売却仲介手数料", costsNow.saleBrokerage, "売却価格から上限額を自動計算", yesNo(input.brokerageEnabled)],
+            ["売却契約 印紙税", costsNow.saleStamp, "不動産売買契約書の軽減税率表", input.electronicContract ? "電子契約: 0円" : auto],
+            ["抵当権抹消・司法書士費用", costsNow.mortgageCancel, "入力額", `${formatYen(costsNow.mortgageCancel)}`],
+            ["譲渡所得税", costsNow.capitalTax, "売却益から取得費・売却費用・3,000万円控除を反映", input.specialDeduction ? "3,000万円控除あり" : "控除なし"],
+            ["売却時費用 合計", costsNow.saleCost, "上記合計", auto]
+          ]
+        },
+        {
+          title: "賃貸側",
+          rows: [
+            ["賃貸 管理費・共益費", costsNow.rentalManagement, input.rentManagementMode === "monthly" ? "月額入力" : `賃貸の場合の家賃（管理費・共益費含まず） × ${formatPct(input.rentManagementRate)} / 月`, input.rentManagementMode === "monthly" ? `${formatYen(costsNow.rentalManagement)} / 月` : `${formatPct(input.rentManagementRate)} / 月`],
+            ["更新料", costsNow.renewal, `賃貸の場合の家賃（管理費・共益費含まず） × ${formatPct(input.renewalRate)} × 2年ごと`, `${formatPct(input.renewalRate)} / 2年`]
+          ]
+        }
+      ];
+
+      document.getElementById("costSections").innerHTML = sections.map((section) => `
+        <div class="panel cost-block">
+          <h4>${section.title}</h4>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th class="text">項目</th>
+                  <th>金額</th>
+                  <th class="text">計算方法</th>
+                  <th>入力</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${section.rows.map(([name, amount, method, inputText]) => `
+                  <tr>
+                    <td class="text">${name}</td>
+                    <td>${formatYen(amount)}</td>
+                    <td class="text">${method}</td>
+                    <td>${inputText}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `).join("");
+
+      const husbandCreditTotal = all.series.base
+        .slice(0, input.occupancyYears)
+        .reduce((sum, row) => sum + row.husbandCredit, 0);
+      const wifeCreditTotal = all.series.base
+        .slice(0, input.occupancyYears)
+        .reduce((sum, row) => sum + row.wifeCredit, 0);
+      document.getElementById("husbandCredit").textContent = formatYen(husbandCreditTotal);
+      document.getElementById("wifeCredit").textContent = formatYen(wifeCreditTotal);
+      document.getElementById("husbandTaxCap").textContent =
+        `年間税額上限 ${formatYen(taxProfile(input.husbandIncome).mortgageCapacity)}`;
+      document.getElementById("wifeTaxCap").textContent =
+        `年間税額上限 ${formatYen(taxProfile(input.wifeIncome).mortgageCapacity)}`;
+    }
+
+    function updateScenario(all) {
+      const input = all.input;
+      const diffs = Object.values(all.series).map((rows) => Math.abs(rows[input.occupancyYears - 1].diff));
+      const maxAbs = Math.max(1, ...diffs);
+      document.getElementById("scenarioCards").innerHTML = Object.entries(all.series).map(([key, rows]) => {
+        const row = rows[input.occupancyYears - 1];
+        const meta = scenarioMeta[key];
+        const width = Math.max(5, Math.min(100, Math.abs(row.diff) / maxAbs * 100));
+        const win = row.diff >= 0;
+        return `
+          <div class="panel scenario-card">
+            <div>
+              <h4>${meta.label}</h4>
+              <span class="muted">${formatPct(input.rates[key])} / 年</span>
+            </div>
+            <div class="big ${win ? "positive" : "negative"}">${formatYen(row.diff)}</div>
+            <div class="scenario-bar ${win ? "" : "loss"}"><span style="width:${width}%; background:${meta.color};"></span></div>
+            <span class="badge ${win ? "" : "loss"}">${win ? "購入が有利" : "賃貸が有利"}</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function updateCashflow(all) {
+      const input = all.input;
+      document.getElementById("cashflowRows").innerHTML = all.series.base.map((row) => {
+        const isTarget = row.year === input.occupancyYears;
+        const diffClass = row.diff >= 0 ? "positive" : "negative";
+        return `
+          <tr style="${isTarget ? "background:#f2f8f7;" : ""}">
+            <td>${row.year}</td>
+            <td>${formatYen(row.buyOutflow)}</td>
+            <td>${formatYen(row.rentOutflow)}</td>
+            <td>${formatYen(row.salePrice)}</td>
+            <td>${formatYen(row.loanBalance)}</td>
+            <td>${formatYen(row.purchaseNet)}</td>
+            <td>${formatYen(row.rentalAsset)}</td>
+            <td class="${diffClass}">${formatYen(row.diff)}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function render() {
+      const input = readInputs();
+      const all = computeAll(input);
+      updateKpis(all);
+      updateCosts(all);
+      updateScenario(all);
+      updateCashflow(all);
+      drawLineChart(all, input);
+    }
+
+    document.querySelectorAll("[data-input]").forEach((el) => {
+      const handleInput = () => {
+        if (fundingFields.has(el.id)) balanceFunding(el.id);
+        render();
+      };
+      el.addEventListener("input", handleInput);
+      el.addEventListener("change", handleInput);
+    });
+
+    document.getElementById("resetAssessmentButton").addEventListener("click", () => {
+      document.getElementById("landAssessment").value = "";
+      document.getElementById("buildingAssessment").value = "";
+      render();
+    });
+
+    document.querySelectorAll("[data-step]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const target = document.getElementById(button.dataset.target);
+        const step = Number(button.dataset.step);
+        target.value = (Number(target.value || 0) + step).toFixed(1);
+        render();
+      });
+    });
+
+    document.querySelectorAll("[data-tab]").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll("[data-tab]").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".view").forEach((view) => view.classList.remove("active"));
+        button.classList.add("active");
+        document.getElementById(button.dataset.tab).classList.add("active");
+      });
+    });
+
+    balanceFunding();
+    render();
+  </script>
+</body>
+</html>
