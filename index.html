@@ -976,7 +976,7 @@
               </div>
             </div>
           </div>
-          <p class="note" id="financingNote">資金整合性を確認中です。</p>
+          <p class="note" id="financingNote" hidden></p>
         </div>
       </section>
 
@@ -1834,11 +1834,13 @@
       const gap = input.purchasePrice - input.downPayment - input.husbandLoan - input.wifeLoan;
       const note = document.getElementById("financingNote");
       if (Math.abs(gap) > 100) {
+        note.hidden = false;
         note.textContent = `資金合計に${formatYen(gap)}のズレがあります。入力欄を変更すると自動で再調整します。`;
         note.className = "note negative";
       } else {
-        note.textContent = "資金合計ロック中: 頭金 + あなたのローン + パートナーのローン = 購入価格 になるよう自動調整しています。購入価格や頭金を変えるとあなたのローン、あなたのローンを変えるとパートナーのローン、パートナーのローンを変えるとあなたのローンで調整します。";
-        note.className = "note positive";
+        note.hidden = true;
+        note.textContent = "";
+        note.className = "note";
       }
     }
 
